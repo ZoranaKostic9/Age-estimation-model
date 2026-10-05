@@ -37,16 +37,19 @@ def main():
                     if test_name == train_name:
                         # Isti skup: uzimamo rezultat unakrsne validacije iz treniranja
                         row.update({"type": "cv", "mae": info["cv_mae"],
-                                    "cs5": np.nan, "baseline_mae": np.nan})
+                                    "cs5": np.nan, "baseline_mae": np.nan, "improvement": np.nan})
                     else:
                         X, y, _ = features[test_name]
                         pred = model.predict(X)
                         baseline = np.full_like(y, train_mean_age)
+                        mae = mean_absolute_error(y, pred)
+                        baseline_mae = mean_absolute_error(y, baseline)
                         row.update({
                             "type": "cross",
-                            "mae": round(mean_absolute_error(y, pred), 3),
+                            "mae": round(mae, 3),
                             "cs5": round(cumulative_score(y, pred), 2),
-                            "baseline_mae": round(mean_absolute_error(y, baseline), 3),
+                            "baseline_mae": round(baseline_mae, 3),
+                            "improvement": round((1 - mae / baseline_mae) * 100, 2),
                         })
                     rows.append(row)
                 print(f"[{tag}] evaluiran")
@@ -63,12 +66,25 @@ def main():
             print(matrix.round(2).to_string())
 
     # Prosek unakrsnih rezultata po kombinaciji CNN + ML
+       # Matrice relativnog poboljšanja (samo unakrsni parovi)
     cross = df[df["type"] == "cross"]
-    summary = cross.groupby(["cnn", "ml"])[["mae", "cs5", "baseline_mae"]].mean().round(2)
+    for cnn in CNNS:
+        for ml in ML_MODELS:
+            subset = cross[(cross["cnn"] == cnn) & (cross["ml"] == ml)]
+            matrix = subset.pivot(index="train", columns="test", values="improvement")
+            print(f"\n=== {cnn} + {ml}: poboljšanje u odnosu na osnovnu liniju (%) ===")
+            print(matrix.round(1).to_string())
+
+    # Prosek po kombinaciji CNN + ML
+    summary = cross.groupby(["cnn", "ml"]).agg(
+        mae=("mae", "mean"),
+        cs5=("cs5", "mean"),
+        improvement=("improvement", "mean"),
+        gore_od_baseline=("improvement", lambda s: int((s < 0).sum())),
+    ).round(2)
     print("\n=== Prosek unakrsnog testiranja ===")
     print(summary.to_string())
     print(f"\nSačuvano: {CROSS_RESULTS_PATH}")
-
 
 if __name__ == "__main__":
     main()
