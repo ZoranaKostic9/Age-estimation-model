@@ -14,5 +14,6 @@
   "n_folds": 3,
   "hpo_samples": 5000,
   "train_samples": 50013,
-  "seconds": 306.9
+  "seconds": 306.9,
+  "cv_rmse": 7.295
 }

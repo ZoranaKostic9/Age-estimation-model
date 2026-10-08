@@ -10,7 +10,7 @@ import numpy as np
 import optuna
 import pandas as pd
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.model_selection import GroupKFold, cross_val_score
+from sklearn.model_selection import GroupKFold, cross_validate
 from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -111,9 +111,12 @@ def optimize(ml: str, X, y, groups, n_trials: int, n_folds: int):
 
     def objective(trial):
         model = build_model(ml, suggest_params(trial, ml))
-        scores = cross_val_score(model, X, y, groups=groups, cv=cv,
-                                 scoring="neg_mean_absolute_error")
-        return -scores.mean()  # MAE, manje je bolje
+        scores = cross_validate(model, X, y, groups=groups, cv=cv,
+                                scoring=("neg_mean_absolute_error",
+                                         "neg_root_mean_squared_error"))
+        # RMSE se samo pamti; optimizuje se MAE
+        trial.set_user_attr("rmse", float(-scores["test_neg_root_mean_squared_error"].mean()))
+        return -scores["test_neg_mean_absolute_error"].mean()
 
     study = optuna.create_study(direction="minimize",
                                 sampler=optuna.samplers.TPESampler(seed=SEED))
@@ -161,6 +164,7 @@ def main():
                     "cnn": cnn, "ml": ml, "train_dataset": train_name,
                     "best_params": study.best_params,
                     "cv_mae": round(study.best_value, 3),
+                    "cv_rmse": round(study.best_trial.user_attrs["rmse"], 3),
                     "n_trials": args.trials, "n_folds": args.folds,
                     "hpo_samples": int(len(y_hpo)), "train_samples": int(len(y)),
                     "seconds": round(elapsed, 1),

@@ -65,15 +65,15 @@ def plot_age_distributions() -> None:
     save(fig, "age_distributions.png")
 
 
-def plot_heatmaps(df: pd.DataFrame) -> None:
+def plot_heatmaps(df: pd.DataFrame, metric: str = "mae") -> None:
     fig, axes = plt.subplots(2, 2, figsize=(10, 9), layout="constrained")
-    vmin, vmax = df["mae"].min(), df["mae"].max()  # ista skala boja za sve 4 mape
+    vmin, vmax = df[metric].min(), df[metric].max()
     labels = [NAMES[d] for d in DATASETS]
     combos = [(cnn, ml) for cnn in CNNS for ml in ML_MODELS]
 
     for ax, (cnn, ml) in zip(axes.flat, combos):
         subset = df[(df["cnn"] == cnn) & (df["ml"] == ml)]
-        matrix = subset.pivot(index="train", columns="test", values="mae").loc[DATASETS, DATASETS]
+        matrix = subset.pivot(index="train", columns="test", values=metric).loc[DATASETS, DATASETS]
         image = ax.imshow(matrix.values, cmap="RdYlGn_r", vmin=vmin, vmax=vmax)
 
         for i in range(len(DATASETS)):
@@ -150,7 +150,8 @@ def plot_mae_by_age(cnn: str = "convnext", ml: str = "xgboost") -> None:
 def main():
     df = pd.read_csv(CROSS_RESULTS_PATH)
     plot_age_distributions()
-    plot_heatmaps(df)
+    plot_heatmaps(df, "mae")
+    plot_heatmaps(df, "rmse")
     print("Predviđene naspram stvarnih godina:")
     plot_pred_vs_true()
     plot_mae_by_age()
