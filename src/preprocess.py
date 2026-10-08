@@ -69,7 +69,7 @@ def align_face(image, landmarks):
     matrix, _ = cv2.estimateAffinePartial2D(landmarks, TEMPLATE, method=cv2.LMEDS)
     if matrix is None:
         return None
-    # Delove van originalne slike popunjava ponavljanjem rubnih piksela umesto crnom
+    # Delove van originalne slike popunjava odrazom (kao u ogledalu) umesto crnom
     return cv2.warpAffine(image, matrix, (OUTPUT_SIZE, OUTPUT_SIZE),
                           borderMode=cv2.BORDER_REFLECT_101)
 
