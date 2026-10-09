@@ -90,9 +90,10 @@ def plot_heatmaps(df: pd.DataFrame, metric: str = "mae") -> None:
         ax.set_ylabel("Skup za treniranje")
         ax.set_title(f"{CNN_NAMES[cnn]} + {ML_NAMES[ml]}")
 
-    fig.colorbar(image, ax=axes, shrink=0.6, label="MAE (godine)")
-    fig.suptitle("MAE unakrsnog testiranja (uokvirena dijagonala = validacija unutar skupa)")
-    save(fig, "heatmap_mae.png")
+    fig.colorbar(image, ax=axes, shrink=0.6, label=f"{metric.upper()} (godine)")
+    fig.suptitle(f"{metric.upper()} unakrsnog testiranja "
+                 f"(uokvirena dijagonala = validacija unutar skupa)")
+    save(fig, f"heatmap_{metric}.png")
 
 
 def plot_pred_vs_true() -> None:
@@ -112,12 +113,10 @@ def plot_pred_vs_true() -> None:
         ax.set_aspect("equal")
 
         mae = np.mean(np.abs(pred - y))
+        rmse = np.sqrt(np.mean((pred - y) ** 2))
         bias = np.mean(pred - y)  # > 0: model u proseku stari, < 0: podmlađuje
         ax.set_title(f"{CNN_NAMES[cnn]} + {ML_NAMES[ml]}: {NAMES[train]} → {NAMES[test]}\n"
-                     f"MAE {mae:.2f}, pristrasnost {bias:+.2f}")
-        ax.set_xlabel("Stvarne godine")
-        ax.set_ylabel("Predviđene godine")
-        ax.legend(loc="upper left", fontsize=8)
+                     f"MAE {mae:.2f}, RMSE {rmse:.2f}, pristrasnost {bias:+.2f}")
 
         print(f"  {cnn} + {ml}, {train} -> {test}: predviđanja od {pred.min():.1f} "
               f"do {pred.max():.1f} (trening: {y_train.min():.0f}-{y_train.max():.0f}), "
